@@ -1,25 +1,78 @@
 {
   "expo": {
-    "name": "apexis",
+    "name": "Apexis",
     "slug": "apexis",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0C10",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.apexis.run",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location"
+        ],
+        "NSMotionUsageDescription": "Apexis uses motion data to count your steps and measure cadence during runs."
+      }
     },
     "android": {
+      "package": "com.apexis.run",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0C10",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "ACTIVITY_RECOGNITION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "./plugins/withPodDeploymentTarget",
+      "./plugins/withSceneLifecycle",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#0A0C10",
+          "imageWidth": 220
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ],
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Apexis uses your location to record your running route, distance and pace.",
+          "locationAlwaysAndWhenInUsePermission": "Allow background access so Apexis keeps tracking your run when the screen is off or you switch apps.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Apexis uses motion data to count steps and measure cadence during runs."
+        }
+      ]
+    ]
   }
 }
