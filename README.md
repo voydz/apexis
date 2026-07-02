@@ -7,7 +7,7 @@ Built with **React Native + Expo (TypeScript)**.
 ## Features
 
 ### Tracking
-- Live GPS tracking with distance, moving time, current pace, average pace
+- Live GPS tracking with distance, moving time, current pace, average pace, and speed (km/h or mph)
 - Works with the screen off / app in background (foreground service on Android, background location on iOS)
 - Auto-pause when you stop moving (configurable), plus manual pause/resume
 - GPS quality filtering: inaccurate fixes (>35 m) and implausible jumps are rejected
@@ -17,7 +17,7 @@ Built with **React Native + Expo (TypeScript)**.
 - Keeps the screen awake during a run; haptic feedback on start/finish
 
 ### Statistics
-- **Per run**: distance, moving vs. elapsed time, avg pace, pace-over-distance chart, elevation profile, splits table with relative pace bars, climb/descent, calories, steps, cadence, max speed, best 1k/5k/10k within the run
+- **Per run**: distance, moving vs. elapsed time, avg pace, pace-over-distance chart, elevation profile, splits table with relative pace bars, climb/descent, calories, steps, cadence, max/avg speed, best 1k/5k/10k within the run
 - **Aggregate**: totals (distance, time, runs, climb, calories, avg pace) by week / month / year / all time
 - **Trends**: distance per day (week view), per week (month view), per month (year view)
 - **Personal records**: fastest 1k / 5k / 10k (best rolling window across any run), longest run, best average pace, biggest climb — each linking to the run that set it
@@ -27,25 +27,78 @@ Built with **React Native + Expo (TypeScript)**.
 - Social/community features — intentionally out of scope
 - Heart rate — phones can't measure it; would require a wearable integration
 
+## Requirements
+
+- Node.js 20+
+- npm
+- **iOS**: Xcode 16+ (iOS 16.4+ deployment target)
+- **Android**: Android Studio / SDK (for native builds)
+
 ## Getting started
 
 ```bash
+git clone https://github.com/voydz/apexis.git
+cd apexis
 npm install
 ```
 
 Background location and maps require **native builds** — this app will not fully work in Expo Go.
 
 ```bash
-# iOS (requires Xcode)
-npx expo run:ios --device
+# iOS simulator or device (requires Xcode)
+npm run ios
 
-# Android (requires Android Studio / SDK)
-npx expo run:android --device
+# Android emulator or device (requires Android SDK)
+npm run android
 ```
 
-For distribution builds use [EAS Build](https://docs.expo.dev/build/introduction/): `npx eas build`.
+Native projects are generated on demand:
 
-### Android maps note
+```bash
+npx expo prebuild
+```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Start Metro bundler |
+| `npm run ios` | Build and run on iOS (`expo run:ios`) |
+| `npm run android` | Build and run on Android (`expo run:android`) |
+| `npx tsc --noEmit` | Typecheck |
+| `npx tsx scripts/sanity-check.ts` | Verify statistics math |
+
+## Production builds
+
+### Local Release (device)
+
+```bash
+# iOS — optimized build on a connected iPhone
+npx expo run:ios --configuration Release --device
+
+# Android
+npx expo run:android --configuration Release --device
+```
+
+### Xcode
+
+```bash
+open ios/Apexis.xcworkspace
+```
+
+Set your signing team, choose **Release**, then Product → Run or Archive.
+
+### EAS Build (cloud)
+
+```bash
+npm install -g eas-cli
+eas login
+eas build --platform ios --profile production
+eas build --platform android --profile production
+```
+
+## Android maps
+
 `react-native-maps` uses Apple Maps on iOS (works out of the box) and Google Maps on Android, which needs an API key. Add it to `app.json` before building for Android:
 
 ```json
@@ -90,6 +143,7 @@ src/
   components/               Reusable UI: charts (SVG), route preview, splits table
   screens/                  Track, History, RunDetail, Stats, Settings
   navigation/               Tabs + stack
+plugins/                    Expo config plugins (iOS deployment target, UIScene)
 ```
 
 ### How the numbers are computed
@@ -99,3 +153,7 @@ src/
 - **Best 1k/5k/10k** — fastest rolling window over the cumulative distance/time curve, computed when the run is saved.
 - **Calories** — ~1.036 kcal × kg × km, using the body weight from Settings.
 - **Cadence** — pedometer steps over a rolling 60 s window.
+
+## License
+
+[MIT](LICENSE)
