@@ -1,6 +1,11 @@
 import { saveRun } from '../db/runRepository';
 import type { Run, TrackPoint } from '../types';
-import { bestWindowTimeS, buildCumulative, estimateCaloriesKcal } from '../utils/analysis';
+import {
+  bestWindowTimeS,
+  buildCumulative,
+  estimateCaloriesKcal,
+  MAX_PLAUSIBLE_SPEED_MS,
+} from '../utils/analysis';
 import { runTitleForTime } from '../utils/format';
 import { readHealthWorkout } from './index';
 import type { HealthWorkoutData } from './types';
@@ -9,7 +14,6 @@ import type { HealthWorkoutData } from './types';
 const PAUSE_GAP_MS = 30_000;
 /** Same hysteresis the live tracking engine uses for elevation. */
 const ELEVATION_THRESHOLD_M = 2;
-const MAX_PLAUSIBLE_SPEED = 12.5;
 
 /** Re-segment imported points so pause gaps aren't counted as moving time. */
 function segmentByGaps(points: TrackPoint[]): TrackPoint[] {
@@ -72,7 +76,7 @@ export function buildRunFromHealthWorkout(
   const { gainM, lossM } = computeElevation(points);
   const speeds = points
     .map((p) => p.speed)
-    .filter((s): s is number => s != null && s > 0 && s <= MAX_PLAUSIBLE_SPEED);
+    .filter((s): s is number => s != null && s > 0 && s <= MAX_PLAUSIBLE_SPEED_MS);
   const caloriesKcal =
     summary.caloriesKcal ?? (distanceM > 0 ? estimateCaloriesKcal(distanceM, weightKg) : null);
 

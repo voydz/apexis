@@ -1,6 +1,13 @@
 import type { Split, TrackPoint } from '../types';
 import { haversineM } from './geo';
 
+/**
+ * Fastest speed we accept as real running (m/s). Windows/paces implying more
+ * indicate broken route timestamps (some health-store imports compress all
+ * points into a few milliseconds).
+ */
+export const MAX_PLAUSIBLE_SPEED_MS = 12.5;
+
 interface CumulativePoint {
   /** cumulative moving distance in meters */
   d: number;
@@ -43,7 +50,7 @@ export function computeSplits(points: TrackPoint[], splitLengthM: number): Split
   const makeSplit = (startIdx: number, endIdx: number, index: number): Split | null => {
     const dist = cum[endIdx].d - cum[startIdx].d;
     const dur = cum[endIdx].t - cum[startIdx].t;
-    if (dist < 1 || dur <= 0) return null;
+    if (dist < 1 || dur <= 0 || dist / dur > MAX_PLAUSIBLE_SPEED_MS) return null;
     const startAlt = firstAltitude(points, startIdx, endIdx);
     const endAlt = lastAltitude(points, startIdx, endIdx);
     return {
@@ -96,6 +103,9 @@ export function bestWindowTimeS(points: TrackPoint[], windowM: number): number |
     while (lo + 1 < hi && cum[hi].d - cum[lo + 1].d >= windowM) lo++;
     if (cum[hi].d - cum[lo].d >= windowM) {
       const time = cum[hi].t - cum[lo].t;
+      // Windows implying superhuman speed mean the route has no usable
+      // per-point timestamps; treat them as no data.
+      if (time <= 0 || (cum[hi].d - cum[lo].d) / time > MAX_PLAUSIBLE_SPEED_MS) continue;
       // Scale down to exactly windowM assuming constant pace in the window
       const scaled = time * (windowM / (cum[hi].d - cum[lo].d));
       if (scaled < best) best = scaled;
@@ -126,7 +136,9 @@ export function paceSeries(points: TrackPoint[], buckets = 80): { x: number; y: 
     const dt = cum[idx].t - cum[lo].t;
     if (dd > 5 && dt > 0) {
       const pace = (dt / dd) * 1000;
-      if (pace < 1800) out.push({ x: target, y: pace });
+      // Drop implausibly fast buckets (broken import timestamps) and
+      // implausibly slow ones (GPS noise while standing).
+      if (pace >= 1000 / MAX_PLAUSIBLE_SPEED_MS && pace < 1800) out.push({ x: target, y: pace });
     }
   }
   return out;

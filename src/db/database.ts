@@ -53,5 +53,15 @@ export async function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!runCols.some((c) => c.name === 'source_name')) {
     await db.execAsync('ALTER TABLE runs ADD COLUMN source_name TEXT');
   }
+  // Implausibly fast best efforts (faster than 12.5 m/s) were computed from
+  // imported routes with broken per-point timestamps; treat them as unknown
+  // so they don't win personal records.
+  await db.execAsync(`
+    UPDATE runs SET
+      best_1k_s = CASE WHEN best_1k_s < 80 THEN NULL ELSE best_1k_s END,
+      best_5k_s = CASE WHEN best_5k_s < 400 THEN NULL ELSE best_5k_s END,
+      best_10k_s = CASE WHEN best_10k_s < 800 THEN NULL ELSE best_10k_s END
+    WHERE best_1k_s < 80 OR best_5k_s < 400 OR best_10k_s < 800;
+  `);
   return db;
 }

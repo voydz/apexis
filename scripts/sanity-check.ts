@@ -65,6 +65,23 @@ const splits2 = computeSplits(negativeSplitRun, 1000);
 assertClose('negative-split split 1 pace', splits2[0].paceSecPerKm, 360, 6);
 assertClose('negative-split split 2 pace', splits2[1].paceSecPerKm, 240, 6);
 
+// Routes with broken timestamps must yield null best efforts, not bogus records.
+function expectNullBest(name: string, points: TrackPoint[]) {
+  const result = bestWindowTimeS(points, 1000);
+  console.log(`${result === null ? 'PASS' : 'FAIL'} ${name}: ${result === null ? 'null as expected' : result}`);
+  if (result !== null) process.exitCode = 1;
+}
+// All points share one timestamp
+expectNullBest(
+  'best 1k with frozen timestamps',
+  syntheticRun(900, 10 / 3).map((p) => ({ ...p, timestamp: 1_700_000_000_000 }))
+);
+// Timestamps compressed into ~1ms steps (3 km "covered" in under a second)
+expectNullBest(
+  'best 1k with compressed timestamps',
+  syntheticRun(900, 10 / 3).map((p, i) => ({ ...p, timestamp: 1_700_000_000_000 + i }))
+);
+
 // Haversine reference: Zurich → Bern ≈ 95.2 km
 assertClose('haversine Zurich→Bern (km)', haversineM(47.3769, 8.5417, 46.948, 7.4474) / 1000, 95.2, 1.5);
 
