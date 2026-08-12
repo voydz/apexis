@@ -1,18 +1,61 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Screen, Card, SectionTitle, SegmentedControl } from '../components/ui';
 import { useSettings } from '../settings/SettingsContext';
+import {
+  healthStoreLabel,
+  isHealthStoreAvailable,
+  isHealthSyncSupported,
+  requestHealthPermissions,
+} from '../health';
 import { colors, radius, spacing, typography } from '../theme';
+import type { RootStackParamList } from '../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function SettingsScreen() {
   const { settings, update } = useSettings();
+  const navigation = useNavigation<Nav>();
+  const [healthBusy, setHealthBusy] = useState(false);
 
   const weightLb = Math.round(settings.weightKg * 2.20462);
   const isMetric = settings.unit === 'metric';
+  const storeLabel = healthStoreLabel();
 
   const adjustWeight = (deltaKg: number) => {
     const next = Math.min(200, Math.max(30, settings.weightKg + deltaKg));
-    update({ weightKg: Math.round(next * 2) / 2 });
+    update({ weightKg: Math.round(next * 2) / 2, weightSetManually: true });
+  };
+
+  const toggleHealthSync = async (value: boolean) => {
+    if (!value) {
+      update({ syncToHealth: false });
+      return;
+    }
+    setHealthBusy(true);
+    try {
+      if (!(await isHealthStoreAvailable())) {
+        Alert.alert(
+          `${storeLabel} unavailable`,
+          `${storeLabel} is not available on this device.`
+        );
+        return;
+      }
+      const granted = await requestHealthPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Permission needed',
+          `Apex could not get access to ${storeLabel}. You can grant it in system settings.`
+        );
+        return;
+      }
+      update({ syncToHealth: true });
+    } finally {
+      setHealthBusy(false);
+    }
   };
 
   return (
@@ -71,10 +114,44 @@ export function SettingsScreen() {
           </View>
         </Card>
 
+        {isHealthSyncSupported() && (
+          <>
+            <SectionTitle>{storeLabel}</SectionTitle>
+            <Card>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowTitle}>Sync with {storeLabel}</Text>
+                  <Text style={styles.rowSubtitle}>
+                    Saves finished runs to {storeLabel} and imports new runs from other apps
+                    automatically.
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.syncToHealth}
+                  onValueChange={toggleHealthSync}
+                  disabled={healthBusy}
+                  trackColor={{ true: colors.accent, false: colors.surfaceAlt }}
+                  thumbColor={colors.text}
+                />
+              </View>
+              {settings.syncToHealth && (
+                <Pressable
+                  onPress={() => navigation.navigate('ImportHealth')}
+                  style={styles.linkRow}
+                  hitSlop={8}
+                >
+                  <Text style={styles.linkLabel}>Import past runs</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+                </Pressable>
+              )}
+            </Card>
+          </>
+        )}
+
         <SectionTitle>About</SectionTitle>
         <Card>
           <Text style={styles.rowSubtitle}>
-            Apexis keeps every run on this device — no account, no cloud, no social feed.
+            Apex keeps every run on this device — no account, no cloud, no social feed.
             Heart-rate data requires a wearable and is not available from the phone alone.
           </Text>
         </Card>
@@ -128,5 +205,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minWidth: 64,
     textAlign: 'center',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.m,
+    paddingTop: spacing.m,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  linkLabel: {
+    ...typography.body,
+    color: colors.accent,
+    fontWeight: '700',
   },
 });

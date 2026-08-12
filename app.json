@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Apexis",
-    "slug": "apexis",
+    "name": "Apex",
+    "slug": "apex",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
         "UIBackgroundModes": [
           "location"
         ],
-        "NSMotionUsageDescription": "Apexis uses motion data to count your steps and measure cadence during runs."
+        "NSMotionUsageDescription": "Apex uses motion data to count your steps and measure cadence during runs."
       }
     },
     "android": {
@@ -32,7 +32,17 @@
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
-        "ACTIVITY_RECOGNITION"
+        "ACTIVITY_RECOGNITION",
+        "android.permission.health.READ_EXERCISE",
+        "android.permission.health.WRITE_EXERCISE",
+        "android.permission.health.READ_EXERCISE_ROUTES",
+        "android.permission.health.WRITE_EXERCISE_ROUTE",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.WRITE_DISTANCE",
+        "android.permission.health.READ_TOTAL_CALORIES_BURNED",
+        "android.permission.health.WRITE_TOTAL_CALORIES_BURNED",
+        "android.permission.health.READ_WEIGHT",
+        "android.permission.health.READ_HEALTH_DATA_HISTORY"
       ]
     },
     "web": {
@@ -54,6 +64,9 @@
         {
           "ios": {
             "deploymentTarget": "16.4"
+          },
+          "android": {
+            "minSdkVersion": 26
           }
         }
       ],
@@ -61,8 +74,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Apexis uses your location to record your running route, distance and pace.",
-          "locationAlwaysAndWhenInUsePermission": "Allow background access so Apexis keeps tracking your run when the screen is off or you switch apps.",
+          "locationWhenInUsePermission": "Apex uses your location to record your running route, distance and pace.",
+          "locationAlwaysAndWhenInUsePermission": "Allow background access so Apex keeps tracking your run when the screen is off or you switch apps.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
@@ -70,9 +83,18 @@
       [
         "expo-sensors",
         {
-          "motionPermission": "Apexis uses motion data to count steps and measure cadence during runs."
+          "motionPermission": "Apex uses motion data to count steps and measure cadence during runs."
         }
-      ]
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Apex reads your workouts and body weight from Apple Health to import past runs and personalize calorie estimates.",
+          "NSHealthUpdateUsageDescription": "Apex saves your runs to Apple Health so they appear in the Health and Fitness apps.",
+          "background": false
+        }
+      ],
+      "react-native-health-connect"
     ]
   }
 }

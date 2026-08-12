@@ -1,7 +1,7 @@
 const { withPodfile } = require('expo/config-plugins');
 
 const MIN_IOS = '16.4';
-const MARKER = '# [apexis] enforce minimum deployment target on all pods';
+const MARKER = '# [apex] enforce minimum deployment target on all pods';
 
 /**
  * Some pods (e.g. RNCAsyncStorage's resource bundle) pin an

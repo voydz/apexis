@@ -1,15 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RunWithPoints } from '../types';
 import { deleteRun, getRunWithPoints } from '../db/runRepository';
+import { exportRunToHealth } from '../health/exportRun';
+import { healthStoreLabel, isHealthSyncSupported } from '../health';
 import { Screen, Card, SectionTitle, StatTile } from '../components/ui';
 import { RunMap } from '../components/RunMap';
 import { AreaChart } from '../components/charts';
 import { SplitsTable } from '../components/SplitsTable';
 import { useSettings } from '../settings/SettingsContext';
-import { colors, spacing, typography } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 import {
   distanceUnitLabel,
   elevationUnitLabel,
@@ -37,6 +40,7 @@ export function RunDetailScreen() {
   const { settings } = useSettings();
   const [run, setRun] = useState<RunWithPoints | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const unit = settings.unit;
 
@@ -53,6 +57,28 @@ export function RunDetailScreen() {
   );
   const pace = useMemo(() => (run ? paceSeries(run.points) : []), [run]);
   const elevation = useMemo(() => (run ? elevationSeries(run.points) : []), [run]);
+
+  const handleExportToHealth = async () => {
+    setExporting(true);
+    try {
+      const uuid = await exportRunToHealth(params.id);
+      if (uuid) {
+        setRun((prev) => (prev ? { ...prev, healthWorkoutUuid: uuid } : prev));
+      } else {
+        Alert.alert(
+          'Export failed',
+          `The run could not be saved to ${healthStoreLabel()}. Check the app's health permissions.`
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Export failed',
+        `The run could not be saved to ${healthStoreLabel()}. Check the app's health permissions.`
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleDelete = () => {
     Alert.alert('Delete run?', 'This cannot be undone.', [
@@ -85,6 +111,7 @@ export function RunDetailScreen() {
   }
 
   const avgPace = run.distanceM > 0 ? run.movingMs / 1000 / (run.distanceM / 1000) : null;
+  const hasRoute = run.points.length >= 2;
 
   return (
     <Screen edges={[]}>
@@ -93,13 +120,23 @@ export function RunDetailScreen() {
           <View style={{ flex: 1 }}>
             <Text style={typography.title}>{run.title}</Text>
             <Text style={typography.caption}>{formatDateTime(run.startedAt)}</Text>
+            {run.sourceName ? (
+              <Text style={styles.sourceLabel}>Imported from {run.sourceName}</Text>
+            ) : null}
           </View>
           <Pressable onPress={handleDelete} hitSlop={12}>
             <Text style={styles.deleteLabel}>Delete</Text>
           </Pressable>
         </View>
 
-        <RunMap points={run.points} style={styles.map} />
+        {hasRoute ? (
+          <RunMap points={run.points} style={styles.map} />
+        ) : (
+          <View style={styles.noRoute}>
+            <Ionicons name="footsteps-outline" size={18} color={colors.textTertiary} />
+            <Text style={styles.noRouteLabel}>No GPS route for this run</Text>
+          </View>
+        )}
 
         <View style={styles.heroGrid}>
           <StatTile
@@ -172,36 +209,59 @@ export function RunDetailScreen() {
           </>
         )}
 
-        <SectionTitle>Pace</SectionTitle>
-        <Card>
-          <AreaChart
-            data={pace.map((p) => ({
-              x: p.x,
-              y: unit === 'metric' ? p.y : p.y * KM_PER_MILE,
-            }))}
-            invertY
-            gradientId="paceGrad"
-            formatY={(y) => formatPace(unit === 'metric' ? y : y / KM_PER_MILE, unit)}
-          />
-        </Card>
+        {hasRoute && (
+          <>
+            <SectionTitle>Pace</SectionTitle>
+            <Card>
+              <AreaChart
+                data={pace.map((p) => ({
+                  x: p.x,
+                  y: unit === 'metric' ? p.y : p.y * KM_PER_MILE,
+                }))}
+                invertY
+                gradientId="paceGrad"
+                formatY={(y) => formatPace(unit === 'metric' ? y : y / KM_PER_MILE, unit)}
+              />
+            </Card>
 
-        <SectionTitle>Elevation</SectionTitle>
-        <Card>
-          <AreaChart
-            data={elevation.map((p) => ({
-              x: p.x,
-              y: unit === 'metric' ? p.y : p.y * FEET_PER_METER,
-            }))}
-            color={colors.blue}
-            gradientId="elevGrad"
-            formatY={(y) => `${Math.round(y)} ${elevationUnitLabel(unit)}`}
-          />
-        </Card>
+            <SectionTitle>Elevation</SectionTitle>
+            <Card>
+              <AreaChart
+                data={elevation.map((p) => ({
+                  x: p.x,
+                  y: unit === 'metric' ? p.y : p.y * FEET_PER_METER,
+                }))}
+                color={colors.blue}
+                gradientId="elevGrad"
+                formatY={(y) => `${Math.round(y)} ${elevationUnitLabel(unit)}`}
+              />
+            </Card>
 
-        <SectionTitle>Splits</SectionTitle>
-        <Card>
-          <SplitsTable splits={splits} unit={unit} />
-        </Card>
+            <SectionTitle>Splits</SectionTitle>
+            <Card>
+              <SplitsTable splits={splits} unit={unit} />
+            </Card>
+          </>
+        )}
+
+        {isHealthSyncSupported() && (
+          <>
+            <SectionTitle>{healthStoreLabel()}</SectionTitle>
+            <Card>
+              {run.healthWorkoutUuid ? (
+                <Text style={styles.healthSynced}>Synced with {healthStoreLabel()}</Text>
+              ) : (
+                <Pressable onPress={handleExportToHealth} disabled={exporting} hitSlop={8}>
+                  {exporting ? (
+                    <ActivityIndicator color={colors.accent} />
+                  ) : (
+                    <Text style={styles.healthAction}>Save to {healthStoreLabel()}</Text>
+                  )}
+                </Pressable>
+              )}
+            </Card>
+          </>
+        )}
       </ScrollView>
     </Screen>
   );
@@ -228,9 +288,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     paddingTop: 6,
   },
+  sourceLabel: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    marginTop: 2,
+  },
   map: {
     height: 220,
     marginBottom: spacing.l,
+  },
+  noRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.m,
+    paddingVertical: spacing.m,
+    marginBottom: spacing.l,
+  },
+  noRouteLabel: {
+    ...typography.caption,
   },
   heroGrid: {
     flexDirection: 'row',
@@ -240,5 +318,15 @@ const styles = StyleSheet.create({
   detailGrid: {
     flexDirection: 'row',
     gap: spacing.m,
+  },
+  healthAction: {
+    ...typography.body,
+    color: colors.accent,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  healthSynced: {
+    ...typography.caption,
+    textAlign: 'center',
   },
 });

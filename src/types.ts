@@ -46,6 +46,13 @@ export interface Run {
   best1kS: number | null;
   best5kS: number | null;
   best10kS: number | null;
+  /**
+   * Platform health-store id: set when the run was exported to (or imported
+   * from) Apple Health / Health Connect. Prevents duplicate sync in both directions.
+   */
+  healthWorkoutUuid?: string | null;
+  /** Name of the originating app for imported runs; null for runs recorded in Apex. */
+  sourceName?: string | null;
 }
 
 export type RunWithPoints = Run & { points: TrackPoint[] };
@@ -81,4 +88,8 @@ export interface AppSettings {
   unit: DistanceUnit;
   weightKg: number;
   autoPause: boolean;
+  /** Sync runs with Apple Health (iOS) / Health Connect (Android). */
+  syncToHealth: boolean;
+  /** True once the user adjusted weight by hand; blocks the Health weight prefill. */
+  weightSetManually: boolean;
 }

@@ -7,7 +7,7 @@ import { haversineM } from '../utils/geo';
 import { runTitleForTime } from '../utils/format';
 import { saveRun } from '../db/runRepository';
 
-export const LOCATION_TASK = 'apexis-location-task';
+export const LOCATION_TASK = 'apex-location-task';
 
 /** Reject fixes with worse horizontal accuracy than this (meters). */
 const MAX_ACCURACY_M = 35;
@@ -188,7 +188,7 @@ class TrackingEngine {
         showsBackgroundLocationIndicator: true,
         pausesUpdatesAutomatically: false,
         foregroundService: {
-          notificationTitle: 'Apexis is tracking your run',
+          notificationTitle: 'Apex is tracking your run',
           notificationBody: 'Recording distance, pace and elevation.',
           notificationColor: '#B7F542',
         },

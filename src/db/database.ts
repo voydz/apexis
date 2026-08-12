@@ -25,7 +25,9 @@ export async function getDb(): Promise<SQLite.SQLiteDatabase> {
       max_speed_ms REAL,
       best_1k_s REAL,
       best_5k_s REAL,
-      best_10k_s REAL
+      best_10k_s REAL,
+      health_workout_uuid TEXT,
+      source_name TEXT
     );
 
     CREATE TABLE IF NOT EXISTS track_points (
@@ -43,5 +45,13 @@ export async function getDb(): Promise<SQLite.SQLiteDatabase> {
 
     CREATE INDEX IF NOT EXISTS idx_runs_started_at ON runs(started_at DESC);
   `);
+  // Migrations for databases created before these columns existed
+  const runCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(runs)');
+  if (!runCols.some((c) => c.name === 'health_workout_uuid')) {
+    await db.execAsync('ALTER TABLE runs ADD COLUMN health_workout_uuid TEXT');
+  }
+  if (!runCols.some((c) => c.name === 'source_name')) {
+    await db.execAsync('ALTER TABLE runs ADD COLUMN source_name TEXT');
+  }
   return db;
 }

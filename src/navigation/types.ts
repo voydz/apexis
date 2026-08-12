@@ -1,6 +1,7 @@
 export type RootStackParamList = {
   Tabs: undefined;
   RunDetail: { id: string };
+  ImportHealth: undefined;
 };
 
 export type TabParamList = {

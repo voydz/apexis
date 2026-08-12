@@ -11,6 +11,7 @@ import { RunMap } from '../components/RunMap';
 import { useTracking } from '../tracking/useTracking';
 import { trackingEngine } from '../tracking/engine';
 import { useSettings } from '../settings/SettingsContext';
+import { exportRunToHealth } from '../health/exportRun';
 import { colors, radius, spacing, typography } from '../theme';
 import {
   distanceUnitLabel,
@@ -54,7 +55,7 @@ export function TrackScreen() {
       if (!fg.granted) {
         Alert.alert(
           'Location needed',
-          'Apexis needs location access to track your run. Enable it in system settings.'
+          'Apex needs location access to track your run. Enable it in system settings.'
         );
         return;
       }
@@ -95,6 +96,10 @@ export function TrackScreen() {
             const run = await trackingEngine.stop();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
             if (run) {
+              if (settings.syncToHealth) {
+                // Fire and forget; a failed export stays available from the run detail screen.
+                exportRunToHealth(run.id).catch(() => {});
+              }
               navigation.navigate('RunDetail', { id: run.id });
             } else {
               Alert.alert('Run discarded', 'Runs shorter than 50 m are not saved.');
@@ -107,7 +112,7 @@ export function TrackScreen() {
         },
       },
     ]);
-  }, [navigation]);
+  }, [navigation, settings.syncToHealth]);
 
   return (
     <Screen>

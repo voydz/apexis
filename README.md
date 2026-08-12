@@ -1,4 +1,4 @@
-# Apexis
+# Apex
 
 A privacy-first run tracker for iOS and Android with a focus on statistics. No accounts, no cloud, no social feed — every run stays on your device.
 
@@ -83,7 +83,7 @@ npx expo run:android --configuration Release --device
 ### Xcode
 
 ```bash
-open ios/Apexis.xcworkspace
+open ios/Apex.xcworkspace
 ```
 
 Set your signing team, choose **Release**, then Product → Run or Archive.
@@ -116,7 +116,7 @@ Without a key the Android map tiles stay blank, but tracking, statistics, and th
 All icon/splash assets in `assets/` are generated from the master artwork with:
 
 ```bash
-node scripts/make-assets.js assets-src/apexis-icon-master.png
+node scripts/make-assets.js assets-src/apex-icon-master.png
 ```
 
 The script color-keys the mark out of the master image and composes the iOS icon, Android adaptive layers (background / foreground / monochrome), splash logo, and favicon with the exact brand background (`#0A0C10`). Re-run `npx expo prebuild --clean` afterwards to embed them.

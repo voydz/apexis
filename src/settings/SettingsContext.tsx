@@ -17,6 +17,8 @@ const DEFAULTS: AppSettings = {
   unit: 'metric',
   weightKg: 70,
   autoPause: true,
+  syncToHealth: false,
+  weightSetManually: false,
 };
 
 interface SettingsContextValue {

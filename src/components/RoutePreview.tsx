@@ -1,12 +1,15 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import type { TrackPoint } from '../types';
 import { colors } from '../theme';
 
 /**
  * Tile-free route thumbnail: projects the GPS trace onto an SVG canvas.
  * Works everywhere without map API keys — used in list cards.
+ * While `loading`, renders a plain box; once loaded, runs without a route
+ * get a footsteps glyph instead of an empty tile.
  */
 export function RoutePreview({
   points,
@@ -14,15 +17,27 @@ export function RoutePreview({
   height,
   stroke = colors.accent,
   strokeWidth = 2.5,
+  loading = false,
 }: {
   points: TrackPoint[];
   width: number;
   height: number;
   stroke?: string;
   strokeWidth?: number;
+  loading?: boolean;
 }) {
   if (points.length < 2) {
-    return <View style={[styles.placeholder, { width, height }]} />;
+    return (
+      <View style={[styles.placeholder, { width, height }]}>
+        {!loading && (
+          <Ionicons
+            name="footsteps-outline"
+            size={Math.round(Math.min(width, height) * 0.4)}
+            color={colors.textTertiary}
+          />
+        )}
+      </View>
+    );
   }
 
   const lats = points.map((p) => p.latitude);
@@ -92,5 +107,7 @@ const styles = StyleSheet.create({
   placeholder: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

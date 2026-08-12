@@ -9,6 +9,7 @@ import { HistoryScreen } from '../screens/HistoryScreen';
 import { StatsScreen } from '../screens/StatsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { RunDetailScreen } from '../screens/RunDetailScreen';
+import { ImportHealthScreen } from '../screens/ImportHealthScreen';
 import type { RootStackParamList, TabParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -72,6 +73,19 @@ export function AppNavigator() {
             headerStyle: { backgroundColor: colors.bg },
             headerShadowVisible: false,
             headerTintColor: colors.accent,
+          }}
+        />
+        <Stack.Screen
+          name="ImportHealth"
+          component={ImportHealthScreen}
+          options={{
+            title: 'Import runs',
+            headerBackTitle: 'Back',
+            headerTransparent: false,
+            headerStyle: { backgroundColor: colors.bg },
+            headerShadowVisible: false,
+            headerTintColor: colors.accent,
+            headerTitleStyle: { color: colors.text },
           }}
         />
       </Stack.Navigator>

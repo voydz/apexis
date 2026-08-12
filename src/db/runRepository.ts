@@ -18,6 +18,8 @@ interface RunRow {
   best_1k_s: number | null;
   best_5k_s: number | null;
   best_10k_s: number | null;
+  health_workout_uuid: string | null;
+  source_name: string | null;
 }
 
 function rowToRun(r: RunRow): Run {
@@ -38,6 +40,8 @@ function rowToRun(r: RunRow): Run {
     best1kS: r.best_1k_s,
     best5kS: r.best_5k_s,
     best10kS: r.best_10k_s,
+    healthWorkoutUuid: r.health_workout_uuid,
+    sourceName: r.source_name,
   };
 }
 
@@ -48,8 +52,9 @@ export async function saveRun(run: Run, points: TrackPoint[]): Promise<void> {
       `INSERT INTO runs (
         id, title, started_at, ended_at, elapsed_ms, moving_ms, distance_m,
         elevation_gain_m, elevation_loss_m, calories_kcal, steps,
-        avg_cadence_spm, max_speed_ms, best_1k_s, best_5k_s, best_10k_s
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        avg_cadence_spm, max_speed_ms, best_1k_s, best_5k_s, best_10k_s,
+        health_workout_uuid, source_name
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       run.id,
       run.title,
       run.startedAt,
@@ -65,7 +70,9 @@ export async function saveRun(run: Run, points: TrackPoint[]): Promise<void> {
       run.maxSpeedMs,
       run.best1kS,
       run.best5kS,
-      run.best10kS
+      run.best10kS,
+      run.healthWorkoutUuid ?? null,
+      run.sourceName ?? null
     );
     // Chunked insert to stay well below SQLite's variable limit
     const CHUNK = 100;
@@ -150,4 +157,18 @@ export async function deleteRun(id: string): Promise<void> {
 export async function updateRunTitle(id: string, title: string): Promise<void> {
   const db = await getDb();
   await db.runAsync('UPDATE runs SET title = ? WHERE id = ?', title, id);
+}
+
+export async function markRunSyncedToHealth(id: string, healthUuid: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE runs SET health_workout_uuid = ? WHERE id = ?', healthUuid, id);
+}
+
+/** Health-store ids of all runs already linked (exported or imported). */
+export async function getLinkedHealthUuids(): Promise<Set<string>> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ health_workout_uuid: string }>(
+    'SELECT health_workout_uuid FROM runs WHERE health_workout_uuid IS NOT NULL'
+  );
+  return new Set(rows.map((r) => r.health_workout_uuid));
 }

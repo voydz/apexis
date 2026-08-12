@@ -58,7 +58,10 @@ export function HistoryScreen() {
       >
         <View style={styles.cardLeft}>
           <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.cardDate}>{formatDateTime(item.startedAt)}</Text>
+          <Text style={styles.cardDate}>
+            {formatDateTime(item.startedAt)}
+            {item.sourceName ? ` · ${item.sourceName}` : ''}
+          </Text>
           <View style={styles.cardStats}>
             <View>
               <Text style={styles.cardStatValue}>
@@ -78,7 +81,12 @@ export function HistoryScreen() {
           </View>
         </View>
         <View style={styles.cardRight}>
-          <RoutePreview points={previews[item.id] ?? []} width={84} height={84} />
+          <RoutePreview
+            points={previews[item.id] ?? []}
+            loading={previews[item.id] === undefined}
+            width={84}
+            height={84}
+          />
         </View>
       </Pressable>
     );
