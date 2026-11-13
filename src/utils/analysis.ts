@@ -92,22 +92,41 @@ function lastAltitude(points: TrackPoint[], from: number, to: number): number | 
 /**
  * Fastest moving time (seconds) over any contiguous window of `windowM` meters.
  * Returns null if the run is shorter than the window.
+ *
+ * `referenceDistanceM` is the externally recorded total distance (e.g. from the
+ * watch). GPS routes usually sum slightly shorter than that, so without
+ * calibration a recorded 10.0 km run may never reach a 10 000 m GPS window.
+ * When given, the window is scaled to the route's measuring scale.
  */
-export function bestWindowTimeS(points: TrackPoint[], windowM: number): number | null {
+export function bestWindowTimeS(
+  points: TrackPoint[],
+  windowM: number,
+  referenceDistanceM?: number | null
+): number | null {
   const cum = buildCumulative(points);
-  if (cum.length < 2 || cum[cum.length - 1].d < windowM) return null;
+  if (cum.length < 2) return null;
+
+  const gpsTotal = cum[cum.length - 1].d;
+  let targetM = windowM;
+  if (referenceDistanceM != null && referenceDistanceM > 0 && gpsTotal > 0) {
+    const scale = gpsTotal / referenceDistanceM;
+    // Only trust small deviations; a route wildly off the recorded distance
+    // is broken in other ways.
+    if (scale >= 0.9 && scale <= 1.1) targetM = windowM * scale;
+  }
+  if (gpsTotal < targetM) return null;
 
   let best = Infinity;
   let lo = 0;
   for (let hi = 1; hi < cum.length; hi++) {
-    while (lo + 1 < hi && cum[hi].d - cum[lo + 1].d >= windowM) lo++;
-    if (cum[hi].d - cum[lo].d >= windowM) {
+    while (lo + 1 < hi && cum[hi].d - cum[lo + 1].d >= targetM) lo++;
+    if (cum[hi].d - cum[lo].d >= targetM) {
       const time = cum[hi].t - cum[lo].t;
       // Windows implying superhuman speed mean the route has no usable
       // per-point timestamps; treat them as no data.
       if (time <= 0 || (cum[hi].d - cum[lo].d) / time > MAX_PLAUSIBLE_SPEED_MS) continue;
-      // Scale down to exactly windowM assuming constant pace in the window
-      const scaled = time * (windowM / (cum[hi].d - cum[lo].d));
+      // Scale down to exactly targetM assuming constant pace in the window
+      const scaled = time * (targetM / (cum[hi].d - cum[lo].d));
       if (scaled < best) best = scaled;
     }
   }

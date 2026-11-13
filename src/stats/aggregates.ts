@@ -21,12 +21,26 @@ export interface TrendBucket {
 
 export interface Records {
   longestRun: Run | null;
-  fastest1k: { run: Run; seconds: number } | null;
-  fastest5k: { run: Run; seconds: number } | null;
-  fastest10k: { run: Run; seconds: number } | null;
   biggestClimb: Run | null;
   bestAvgPace: Run | null;
   mostSteps: Run | null;
+}
+
+export interface EffortEntry {
+  run: Run;
+  seconds: number;
+}
+
+/** Fastest runs over the given best-effort window, best first. */
+export function topEfforts(
+  runs: Run[],
+  key: 'best1kS' | 'best5kS' | 'best10kS',
+  limit = 5
+): EffortEntry[] {
+  return runs
+    .flatMap((run) => (run[key] != null ? [{ run, seconds: run[key] as number }] : []))
+    .sort((a, b) => a.seconds - b.seconds)
+    .slice(0, limit);
 }
 
 function startOfDay(d: Date): Date {
@@ -165,9 +179,6 @@ export function computeRecords(runs: Run[]): Records {
   let biggestClimb: Run | null = null;
   let bestAvgPace: Run | null = null;
   let mostSteps: Run | null = null;
-  let fastest1k: { run: Run; seconds: number } | null = null;
-  let fastest5k: { run: Run; seconds: number } | null = null;
-  let fastest10k: { run: Run; seconds: number } | null = null;
 
   for (const r of runs) {
     if (!longestRun || r.distanceM > longestRun.distanceM) longestRun = r;
@@ -181,16 +192,7 @@ export function computeRecords(runs: Run[]): Records {
         : Infinity;
       if (pace < bestPace) bestAvgPace = r;
     }
-    if (r.best1kS != null && (!fastest1k || r.best1kS < fastest1k.seconds)) {
-      fastest1k = { run: r, seconds: r.best1kS };
-    }
-    if (r.best5kS != null && (!fastest5k || r.best5kS < fastest5k.seconds)) {
-      fastest5k = { run: r, seconds: r.best5kS };
-    }
-    if (r.best10kS != null && (!fastest10k || r.best10kS < fastest10k.seconds)) {
-      fastest10k = { run: r, seconds: r.best10kS };
-    }
   }
 
-  return { longestRun, fastest1k, fastest5k, fastest10k, biggestClimb, bestAvgPace, mostSteps };
+  return { longestRun, biggestClimb, bestAvgPace, mostSteps };
 }

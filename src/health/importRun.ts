@@ -94,9 +94,9 @@ export function buildRunFromHealthWorkout(
     steps: null,
     avgCadenceSpm: null,
     maxSpeedMs: speeds.length > 0 ? Math.max(...speeds) : null,
-    best1kS: bestWindowTimeS(points, 1000),
-    best5kS: bestWindowTimeS(points, 5000),
-    best10kS: bestWindowTimeS(points, 10000),
+    best1kS: bestWindowTimeS(points, 1000, distanceM),
+    best5kS: bestWindowTimeS(points, 5000, distanceM),
+    best10kS: bestWindowTimeS(points, 10000, distanceM),
     healthWorkoutUuid: summary.id,
     sourceName: summary.sourceName,
   };

@@ -85,4 +85,30 @@ expectNullBest(
 // Haversine reference: Zurich → Bern ≈ 95.2 km
 assertClose('haversine Zurich→Bern (km)', haversineM(47.3769, 8.5417, 46.948, 7.4474) / 1000, 95.2, 1.5);
 
+// GPS-undershoot calibration: a run recorded as 5.00 km whose GPS route sums
+// to ~4.95 km must still yield a best-5k effort (window scaled to the route).
+const undershootRun = syntheticRun(1485, 10 / 3); // ~4950 m at 5:00/km
+const gpsTotal = buildCumulative(undershootRun)[undershootRun.length - 1].d;
+console.log(
+  `${gpsTotal < 5000 ? 'PASS' : 'FAIL'} undershoot route is short of 5k: ${gpsTotal.toFixed(0)} m`
+);
+if (gpsTotal >= 5000) process.exitCode = 1;
+const uncalibrated = bestWindowTimeS(undershootRun, 5000);
+console.log(
+  `${uncalibrated === null ? 'PASS' : 'FAIL'} best 5k without reference: ${uncalibrated === null ? 'null as expected' : uncalibrated}`
+);
+if (uncalibrated !== null) process.exitCode = 1;
+assertClose(
+  'best 5k calibrated to recorded 5.00 km (s)',
+  bestWindowTimeS(undershootRun, 5000, 5000) ?? NaN,
+  1485,
+  10
+);
+// A route wildly off the recorded distance must not be "calibrated".
+const wildOff = bestWindowTimeS(undershootRun, 5000, 10_000);
+console.log(
+  `${wildOff === null ? 'PASS' : 'FAIL'} no calibration for wildly-off reference: ${wildOff === null ? 'null as expected' : wildOff}`
+);
+if (wildOff !== null) process.exitCode = 1;
+
 console.log(process.exitCode === 1 ? '\nSome checks FAILED' : '\nAll checks passed');

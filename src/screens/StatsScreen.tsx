@@ -13,6 +13,8 @@ import {
   computeTotals,
   computeTrend,
   filterByPeriod,
+  topEfforts,
+  EffortEntry,
   Period,
 } from '../stats/aggregates';
 import {
@@ -36,6 +38,8 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: 'all', label: 'All' },
 ];
 
+const TROPHIES = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+
 export function StatsScreen() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [period, setPeriod] = useState<Period>('week');
@@ -53,23 +57,17 @@ export function StatsScreen() {
   const totals = useMemo(() => computeTotals(periodRuns), [periodRuns]);
   const trend = useMemo(() => computeTrend(periodRuns, period), [periodRuns, period]);
   const records = useMemo(() => computeRecords(runs), [runs]);
+  const bestEfforts = useMemo(
+    () =>
+      [
+        { label: 'Fastest 1 km', entries: topEfforts(runs, 'best1kS') },
+        { label: 'Fastest 5 km', entries: topEfforts(runs, 'best5kS') },
+        { label: 'Fastest 10 km', entries: topEfforts(runs, 'best10kS') },
+      ].filter((s) => s.entries.length > 0),
+    [runs]
+  );
 
   const recordRows: { label: string; value: string; run: Run | null }[] = [
-    {
-      label: 'Fastest 1k',
-      value: records.fastest1k ? formatDuration(records.fastest1k.seconds * 1000) : '--',
-      run: records.fastest1k?.run ?? null,
-    },
-    {
-      label: 'Fastest 5k',
-      value: records.fastest5k ? formatDuration(records.fastest5k.seconds * 1000) : '--',
-      run: records.fastest5k?.run ?? null,
-    },
-    {
-      label: 'Fastest 10k',
-      value: records.fastest10k ? formatDuration(records.fastest10k.seconds * 1000) : '--',
-      run: records.fastest10k?.run ?? null,
-    },
     {
       label: 'Longest run',
       value: records.longestRun
@@ -171,6 +169,34 @@ export function StatsScreen() {
                 </Pressable>
               ))}
             </Card>
+
+            {bestEfforts.map((section) => (
+              <React.Fragment key={section.label}>
+                <SectionTitle>{`${section.label} — top ${section.entries.length}`}</SectionTitle>
+                <Card style={{ paddingVertical: spacing.s }}>
+                  {section.entries.map((entry: EffortEntry, i: number) => (
+                    <Pressable
+                      key={entry.run.id}
+                      onPress={() => navigation.navigate('RunDetail', { id: entry.run.id })}
+                      style={({ pressed }) => [
+                        styles.recordRow,
+                        i < section.entries.length - 1 && styles.recordRowBorder,
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <Text style={styles.rankBadge}>{TROPHIES[i] ?? `${i + 1}.`}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.recordLabel}>{entry.run.title}</Text>
+                        <Text style={styles.recordDate}>{formatDate(entry.run.startedAt)}</Text>
+                      </View>
+                      <Text style={styles.recordValue}>
+                        {formatDuration(entry.seconds * 1000)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </Card>
+              </React.Fragment>
+            ))}
           </>
         )}
       </ScrollView>
@@ -194,7 +220,14 @@ const styles = StyleSheet.create({
   recordRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.s,
     paddingVertical: spacing.m - 2,
+  },
+  rankBadge: {
+    ...typography.body,
+    fontSize: 18,
+    width: 30,
+    textAlign: 'center',
   },
   recordRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,

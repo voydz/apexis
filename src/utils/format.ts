@@ -67,6 +67,7 @@ export function formatDate(ts: number): string {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
   });
 }
 
